@@ -1,0 +1,34 @@
+{
+  "name": "teste-tecnico-sr-rankmyapp",
+  "version": "1.0.0",
+  "description": "Implementação do teste técnico para desenvolvedor sênior na empresa RankMyApp",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file=.env src/server.ts",
+    "test": "vitest",
+    "test:run": "vitest run"
+  },
+  "author": "Igor Mello",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/iigormello/teste-tecnico-sr-rankmyapp/issues"
+  },
+  "homepage": "https://github.com/iigormello/teste-tecnico-sr-rankmyapp#readme",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "mongodb": "^7.1.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.2.0",
+    "@types/supertest": "^6.0.3",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
+    "supertest": "^7.0.0",
+    "vitest": "^4.0.18"
+  }
+}
