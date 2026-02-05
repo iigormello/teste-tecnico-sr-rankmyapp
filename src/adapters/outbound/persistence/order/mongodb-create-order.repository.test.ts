@@ -2,30 +2,17 @@ import { describe, it, expect, vi } from 'vitest';
 import { MongoDBCreateOrderRepository } from './mongodb-create-order.repository';
 import type { OrderDto } from '../../../../domain/order/dto/order.dto';
 import type { OrderResponseDto } from '../../../../domain/order/dto/order-response.dto';
-import { CreateOrderFailedError, OrderNotFoundError } from '../../../../domain/order/errors';
-
-const fakeInsertedId = '507f1f77bcf86cd799439011';
+import { CreateOrderFailedError } from '../../../../domain/order/errors';
 
 function createMockDb() {
-  const mockInsertOne = vi.fn().mockResolvedValue({ insertedId: fakeInsertedId });
-  const mockFindOne = vi.fn().mockResolvedValue({
-    _id: fakeInsertedId,
-    orderNumber: 'ord-123',
-    customerId: '123',
-    items: [{ productId: 'p1', quantity: 2 }],
-    status: 'CREATED',
-    statusHistory: [{ status: 'CREATED', createdAt: new Date() }],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  });
+  const mockInsertOne = vi.fn().mockResolvedValue({ insertedId: '507f1f77bcf86cd799439011' });
   const mockCollection = {
     insertOne: mockInsertOne,
-    findOne: mockFindOne,
   };
   const mockDb = {
     collection: vi.fn().mockReturnValue(mockCollection),
   };
-  return { mockDb, mockInsertOne, mockFindOne, mockCollection };
+  return { mockDb, mockInsertOne, mockCollection };
 }
 
 describe('MongoDBCreateOrderRepository', () => {
@@ -79,9 +66,9 @@ describe('MongoDBCreateOrderRepository', () => {
     expect((result as OrderResponseDto).status).toBe('CREATED');
   });
 
-  it('lança CreateOrderFailedError ou OrderNotFoundError quando findOne retorna null', async () => {
-    const { mockDb, mockFindOne } = createMockDb();
-    mockFindOne.mockResolvedValueOnce(null);
+  it('lança CreateOrderFailedError quando insertOne falha', async () => {
+    const { mockDb, mockInsertOne } = createMockDb();
+    mockInsertOne.mockRejectedValueOnce(new Error('DB error'));
     const repo = new MongoDBCreateOrderRepository(mockDb as any);
 
     const order: OrderDto = {
@@ -94,9 +81,6 @@ describe('MongoDBCreateOrderRepository', () => {
       updatedAt: new Date(),
     };
 
-    await expect(repo.save(order)).rejects.toSatisfy(
-      (err: unknown) =>
-        err instanceof CreateOrderFailedError || err instanceof OrderNotFoundError
-    );
+    await expect(repo.save(order)).rejects.toThrow(CreateOrderFailedError);
   });
 });

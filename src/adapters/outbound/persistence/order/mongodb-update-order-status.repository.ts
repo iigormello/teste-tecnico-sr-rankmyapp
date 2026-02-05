@@ -15,22 +15,15 @@ export class MongoDBUpdateOrderStatusRepository implements IUpdateStatusOrderRep
 
     async updateStatus(updateOrderStatusDto: UpdateOrderStatusDto): Promise<OrderResponseDto> {
         const collection = this.db.collection<OrderResponseDto>(COLLECTION);
-        collection.createIndex({ orderNumber: 1 }, { unique: true });
-
-        const order = await collection.findOne<OrderResponseDto>({ orderNumber: updateOrderStatusDto.orderNumber });
-
-        if (!order) {
-            throw new OrderNotFoundError({ orderNumber: updateOrderStatusDto.orderNumber });
-        }
-
-        await collection.updateOne({ 
-            orderNumber: updateOrderStatusDto.orderNumber 
-        }, { 
-            $set: { status: updateOrderStatusDto.status, updatedAt: new Date() }, 
-            $push: { statusHistory: { status: updateOrderStatusDto.status, createdAt: new Date() } } 
-        });
-
-        const orderUpdated = await collection.findOne<OrderResponseDto>({ orderNumber: updateOrderStatusDto.orderNumber });
+        const now = new Date();
+        const orderUpdated = await collection.findOneAndUpdate(
+            { orderNumber: updateOrderStatusDto.orderNumber },
+            {
+                $set: { status: updateOrderStatusDto.status, updatedAt: now },
+                $push: { statusHistory: { status: updateOrderStatusDto.status, createdAt: now } },
+            },
+            { returnDocument: 'after' }
+        );
 
         if (!orderUpdated) {
             throw new OrderNotFoundError({ orderNumber: updateOrderStatusDto.orderNumber });

@@ -1,13 +1,15 @@
-import crypto from 'crypto';
-import type { IOrderCreateRepository } from '../../../../ports/order/create-order.repository.ts';
-import type { IOrderFindRepository } from '../../../../ports/order/find-order.repository.ts';
-import type { IUpdateStatusOrderRepository } from '../../../../ports/order/update-status-order.repository.ts';
-import { ObjectId } from 'bson';
 import { Router } from 'express';
 import { sendSuccess, sendError } from '../response.ts';
 import { validateCreateOrderBody, validateFindOrderParams, validateUpdateOrderStatusBody } from './order.validation.ts';
+import type { CreateOrderUseCase } from '../../../../application/order/create-order.use-case.ts';
+import type { FindOrderUseCase } from '../../../../application/order/find-order.use-case.ts';
+import type { UpdateOrderStatusUseCase } from '../../../../application/order/update-order-status.use-case.ts';
 
-export function createOrderRoutes(createRepository: IOrderCreateRepository, findRepository: IOrderFindRepository, updateStatusRepository: IUpdateStatusOrderRepository): Router {
+export function createOrderRoutes(
+  createOrderUseCase: CreateOrderUseCase,
+  findOrderUseCase: FindOrderUseCase,
+  updateOrderStatusUseCase: UpdateOrderStatusUseCase
+): Router {
   const router = Router();
 
   router.post('/', async (req, res) => {
@@ -16,16 +18,7 @@ export function createOrderRoutes(createRepository: IOrderCreateRepository, find
       sendError(res, 400, 'Dados inválidos', 'VALIDATION_ERROR', validation.errors);
       return;
     }
-    const { customerId, items } = validation.data;
-    const order = await createRepository.save({
-      _id: new ObjectId().toString(),
-      orderNumber: crypto.randomUUID(),
-      customerId,
-      items,
-      status: 'CREATED',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+    const order = await createOrderUseCase.execute(validation.data);
     sendSuccess(res, 201, 'Pedido criado com sucesso', order);
   });
 
@@ -35,8 +28,8 @@ export function createOrderRoutes(createRepository: IOrderCreateRepository, find
       sendError(res, 400, 'Parâmetros inválidos', 'VALIDATION_ERROR', validation.errors);
       return;
     }
-    const order = await findRepository.find({ orderNumber: validation.data.orderNumber });
-    sendSuccess(res, 200, 'Pedido encontrado com sucesso', order as NonNullable<typeof order>);
+    const order = await findOrderUseCase.execute(validation.data.orderNumber);
+    sendSuccess(res, 200, 'Pedido encontrado com sucesso', order);
   });
 
   router.patch('/:orderNumber/status', async (req, res) => {
@@ -50,7 +43,7 @@ export function createOrderRoutes(createRepository: IOrderCreateRepository, find
       sendError(res, 400, 'Dados inválidos', 'VALIDATION_ERROR', bodyValidation.errors);
       return;
     }
-    const order = await updateStatusRepository.updateStatus({
+    const order = await updateOrderStatusUseCase.execute({
       orderNumber: paramsValidation.data.orderNumber,
       status: bodyValidation.data.status,
     });

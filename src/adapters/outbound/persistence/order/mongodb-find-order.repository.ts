@@ -15,8 +15,6 @@ export class MongoDBFindOrderRepository implements IOrderFindRepository {
 
     async find(orderFindDto: OrderFindDto): Promise<OrderResponseDto | null> {
         const collection = this.db.collection<OrderResponseDto>(COLLECTION);
-        collection.createIndex({ orderNumber: 1 }, { unique: true });
-        
         const order = await collection.findOne<OrderResponseDto>({ orderNumber: orderFindDto.orderNumber });
 
         if (!order) {

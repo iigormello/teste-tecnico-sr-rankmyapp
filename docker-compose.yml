@@ -10,7 +10,7 @@ services:
       PORT: 3000
       NODE_ENV: development
       MONGODB_URI: mongodb://${MONGODB_USER}:${MONGODB_PASSWORD}@mongodb:27017/${MONGODB_NAME}?authSource=admin
-      RABBITMQ_URI: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:${RABBITMQ_PORT}/${RABBITMQ_QUEUE}
+      RABBITMQ_URI: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:${RABBITMQ_PORT:-5672}/${RABBITMQ_VHOST:-}
     env_file:
       - .env
     depends_on:

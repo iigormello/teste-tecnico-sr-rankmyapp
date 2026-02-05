@@ -2,7 +2,7 @@ import type { IOrderCreateRepository } from '../../../../ports/order/create-orde
 import type { OrderDto } from '../../../../domain/order/dto/order.dto';
 import { Db } from 'mongodb';
 import type { OrderResponseDto } from '../../../../domain/order/dto/order-response.dto.ts';
-import { CreateOrderFailedError, OrderNotFoundError } from '../../../../domain/order/errors.ts';
+import { CreateOrderFailedError } from '../../../../domain/order/errors.ts';
 
 const COLLECTION = process.env.MONGODB_COLLECTION ?? 'orders';
 
@@ -33,18 +33,10 @@ export class MongoDBCreateOrderRepository implements IOrderCreateRepository {
       updatedAt: order.updatedAt,
     };
     try {
-      const result = await collection.insertOne(doc);
-
-      const orderFind = await collection.findOne<OrderResponseDto>({ _id: result.insertedId });
-      
-      if (!orderFind) {
-        throw new OrderNotFoundError({ orderNumber: order.orderNumber });
-      }
-
-      const { _id: _omit, ...orderNew } = orderFind as typeof orderFind & { _id: unknown };
+      await collection.insertOne(doc);
+      const { _id: _omit, ...orderNew } = doc;
       return orderNew as OrderResponseDto;
     } catch (err) {
-      if (err instanceof OrderNotFoundError) throw err;
       throw new CreateOrderFailedError(err);
     }
   }
