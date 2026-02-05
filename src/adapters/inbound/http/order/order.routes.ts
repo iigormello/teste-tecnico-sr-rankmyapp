@@ -1,12 +1,13 @@
 import crypto from 'crypto';
 import type { IOrderCreateRepository } from '../../../../ports/order/create-order.repository.ts';
 import type { IOrderFindRepository } from '../../../../ports/order/find-order.repository.ts';
+import type { IUpdateStatusOrderRepository } from '../../../../ports/order/update-status-order.repository.ts';
 import { ObjectId } from 'bson';
 import { Router } from 'express';
 import { sendSuccess, sendError } from '../response.ts';
-import { validateCreateOrderBody, validateFindOrderParams } from './order.validation.ts';
+import { validateCreateOrderBody, validateFindOrderParams, validateUpdateOrderStatusBody } from './order.validation.ts';
 
-export function createOrderRoutes(createRepository: IOrderCreateRepository, findRepository: IOrderFindRepository): Router {
+export function createOrderRoutes(createRepository: IOrderCreateRepository, findRepository: IOrderFindRepository, updateStatusRepository: IUpdateStatusOrderRepository): Router {
   const router = Router();
 
   router.post('/', async (req, res) => {
@@ -38,8 +39,22 @@ export function createOrderRoutes(createRepository: IOrderCreateRepository, find
     sendSuccess(res, 200, 'Pedido encontrado com sucesso', order as NonNullable<typeof order>);
   });
 
-  router.patch('/:id/status', (_req, res) => {
-    res.status(501).json({ message: 'Not implemented: atualizar status do pedido' });
+  router.patch('/:orderNumber/status', async (req, res) => {
+    const paramsValidation = validateFindOrderParams(req.params.orderNumber);
+    if (!paramsValidation.valid) {
+      sendError(res, 400, 'Parâmetros inválidos', 'VALIDATION_ERROR', paramsValidation.errors);
+      return;
+    }
+    const bodyValidation = validateUpdateOrderStatusBody(req.body);
+    if (!bodyValidation.valid) {
+      sendError(res, 400, 'Dados inválidos', 'VALIDATION_ERROR', bodyValidation.errors);
+      return;
+    }
+    const order = await updateStatusRepository.updateStatus({
+      orderNumber: paramsValidation.data.orderNumber,
+      status: bodyValidation.data.status,
+    });
+    sendSuccess(res, 200, 'Status atualizado com sucesso', order);
   });
 
   return router;

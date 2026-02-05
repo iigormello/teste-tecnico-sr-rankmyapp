@@ -3,7 +3,6 @@ import type { OrderDto } from '../../../../domain/order/dto/order.dto';
 import { Db } from 'mongodb';
 import type { OrderResponseDto } from '../../../../domain/order/dto/order-response.dto.ts';
 import { CreateOrderFailedError, OrderNotFoundError } from '../../../../domain/order/errors.ts';
-//import { OrderNotFoundError } from '../../../../domain/order/errors.ts';
 
 const COLLECTION = process.env.MONGODB_COLLECTION ?? 'orders';
 

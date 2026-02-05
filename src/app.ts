@@ -6,6 +6,7 @@ import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger.ts';
 import { MongoDBCreateOrderRepository } from './adapters/outbound/persistence/order/mongodb-create-order.repository.ts';
 import { MongoDBFindOrderRepository } from './adapters/outbound/persistence/order/mongodb-find-order.repository.ts';
+import { MongoDBUpdateOrderStatusRepository } from './adapters/outbound/persistence/order/mongodb-update-order-status.repository.ts';
 
 export function createApp(db: Db): express.Express {
   const app = express();
@@ -26,8 +27,8 @@ export function createApp(db: Db): express.Express {
 
   const orderRepository = new MongoDBCreateOrderRepository(db);
   const orderFindRepository = new MongoDBFindOrderRepository(db);
-
-  app.use('/orders', createOrderRoutes(orderRepository, orderFindRepository));
+  const updateStatusRepository = new MongoDBUpdateOrderStatusRepository(db);
+  app.use('/orders', createOrderRoutes(orderRepository, orderFindRepository, updateStatusRepository));
 
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 

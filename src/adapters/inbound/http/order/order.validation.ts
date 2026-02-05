@@ -87,3 +87,26 @@ export function validateFindOrderParams(orderNumber: string | undefined): Valida
   }
   return { valid: true, data: { orderNumber: trimmed } };
 }
+
+const VALID_STATUSES = ['CREATED', 'IN_PROCESSING', 'SENT', 'DELIVERED'] as const;
+export type OrderStatus = (typeof VALID_STATUSES)[number];
+
+const STATUS_FIELD = 'status';
+
+export function validateUpdateOrderStatusBody(body: unknown): ValidateResult<{ status: OrderStatus }> {
+  if (body === null || typeof body !== 'object') {
+    return invalid(STATUS_FIELD, 'Body deve ser um objeto JSON');
+  }
+  const b = body as Record<string, unknown>;
+  if (b.status === undefined || b.status === null) {
+    return invalid(STATUS_FIELD, 'status é obrigatório');
+  }
+  if (typeof b.status !== 'string') {
+    return invalid(STATUS_FIELD, 'status deve ser uma string');
+  }
+  const status = (b.status as string).toUpperCase();
+  if (!VALID_STATUSES.includes(status as OrderStatus)) {
+    return invalid(STATUS_FIELD, `status deve ser um dos valores: ${VALID_STATUSES.join(', ')}`);
+  }
+  return { valid: true, data: { status: status as OrderStatus } };
+}
