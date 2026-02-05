@@ -1,7 +1,9 @@
 import type { IOrderCreateRepository } from '../../../../ports/order/create-order.repository';
 import type { OrderDto } from '../../../../domain/order/dto/order.dto';
 import { Db } from 'mongodb';
-import type { CreateOrderResponseDto } from '../../../../domain/order/dto/create-order-response.dto.ts';
+import type { OrderResponseDto } from '../../../../domain/order/dto/order-response.dto.ts';
+import { CreateOrderFailedError, OrderNotFoundError } from '../../../../domain/order/errors.ts';
+//import { OrderNotFoundError } from '../../../../domain/order/errors.ts';
 
 const COLLECTION = process.env.MONGODB_COLLECTION ?? 'orders';
 
@@ -14,7 +16,7 @@ export class MongoDBCreateOrderRepository implements IOrderCreateRepository {
     this.db = db;
   }
 
-  async save(order: OrderDto): Promise<CreateOrderResponseDto> {
+  async save(order: OrderDto): Promise<OrderResponseDto> {
     const collection = this.db.collection<OrderDocument>(COLLECTION);
     const doc: OrderDocument = {
       _id: order._id,
@@ -31,15 +33,20 @@ export class MongoDBCreateOrderRepository implements IOrderCreateRepository {
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
     };
-    const result = await collection.insertOne(doc);
+    try {
+      const result = await collection.insertOne(doc);
 
-    //Depois que tiver o get order posso chamar o get order e retornar o orderNew
-    const orderFind = await collection.findOne<CreateOrderResponseDto>({ _id: result.insertedId });
-    if (!orderFind) {
-      throw new Error('Order not found');
+      const orderFind = await collection.findOne<OrderResponseDto>({ _id: result.insertedId });
+      
+      if (!orderFind) {
+        throw new OrderNotFoundError({ orderNumber: order.orderNumber });
+      }
+
+      const { _id: _omit, ...orderNew } = orderFind as typeof orderFind & { _id: unknown };
+      return orderNew as OrderResponseDto;
+    } catch (err) {
+      if (err instanceof OrderNotFoundError) throw err;
+      throw new CreateOrderFailedError(err);
     }
-
-    const { _id: _omit, ...orderNew } = orderFind as typeof orderFind & { _id: unknown };
-    return orderNew as CreateOrderResponseDto;
   }
 }

@@ -5,6 +5,7 @@ import { errorHandler } from './adapters/inbound/http/order/order.middleware.ts'
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger.ts';
 import { MongoDBCreateOrderRepository } from './adapters/outbound/persistence/order/mongodb-create-order.repository.ts';
+import { MongoDBFindOrderRepository } from './adapters/outbound/persistence/order/mongodb-find-order.repository.ts';
 
 export function createApp(db: Db): express.Express {
   const app = express();
@@ -24,7 +25,9 @@ export function createApp(db: Db): express.Express {
   });
 
   const orderRepository = new MongoDBCreateOrderRepository(db);
-  app.use('/orders', createOrderRoutes(orderRepository));
+  const orderFindRepository = new MongoDBFindOrderRepository(db);
+
+  app.use('/orders', createOrderRoutes(orderRepository, orderFindRepository));
 
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 

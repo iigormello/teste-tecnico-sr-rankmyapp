@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { MongoDBCreateOrderRepository } from './mongodb-create-order.repository';
 import type { OrderDto } from '../../../../domain/order/dto/order.dto';
-import type { CreateOrderResponseDto } from '../../../../domain/order/dto/create-order-response.dto';
+import type { OrderResponseDto } from '../../../../domain/order/dto/order-response.dto';
+import { CreateOrderFailedError, OrderNotFoundError } from '../../../../domain/order/errors';
 
 const fakeInsertedId = '507f1f77bcf86cd799439011';
 
@@ -56,7 +57,7 @@ describe('MongoDBCreateOrderRepository', () => {
     expect(doc.statusHistory[0].status).toBe('CREATED');
   });
 
-  it('retorna o pedido sem o campo _id (CreateOrderResponseDto)', async () => {
+  it('retorna o pedido sem o campo _id (OrderResponseDto)', async () => {
     const { mockDb } = createMockDb();
     const repo = new MongoDBCreateOrderRepository(mockDb as any);
 
@@ -73,12 +74,12 @@ describe('MongoDBCreateOrderRepository', () => {
     const result = await repo.save(order);
     
     expect(result).not.toHaveProperty('_id');
-    expect((result as CreateOrderResponseDto).orderNumber).toBe('ord-123');
-    expect((result as CreateOrderResponseDto).customerId).toBe('123');
-    expect((result as CreateOrderResponseDto).status).toBe('CREATED');
+    expect((result as OrderResponseDto).orderNumber).toBe('ord-123');
+    expect((result as OrderResponseDto).customerId).toBe('123');
+    expect((result as OrderResponseDto).status).toBe('CREATED');
   });
 
-  it('lança erro quando findOne retorna null', async () => {
+  it('lança CreateOrderFailedError ou OrderNotFoundError quando findOne retorna null', async () => {
     const { mockDb, mockFindOne } = createMockDb();
     mockFindOne.mockResolvedValueOnce(null);
     const repo = new MongoDBCreateOrderRepository(mockDb as any);
@@ -93,6 +94,9 @@ describe('MongoDBCreateOrderRepository', () => {
       updatedAt: new Date(),
     };
 
-    await expect(repo.save(order)).rejects.toThrow('Order not found');
+    await expect(repo.save(order)).rejects.toSatisfy(
+      (err: unknown) =>
+        err instanceof CreateOrderFailedError || err instanceof OrderNotFoundError
+    );
   });
 });
